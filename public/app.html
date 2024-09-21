@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f0f2f5;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background-color: #2d2f48;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-header i {
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .sidebar-content .section {
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-content .section h3 {
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .item:hover, .item.active {
+            background-color: #393b57;
+        }
+        
+        .item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        
+        .item .details {
+            flex: 1;
+        }
+        
+        .item .details .name {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .item .details .time {
+            color: #c0c0c0;
+            font-size: 12px;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .main-header img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .main-header .name {
+            color: #2d2f48;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .main-header .icons i {
+            color: #2d2f48;
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .main-header .icons i:hover {
+            color: #007bff;
+        }
+        
+        .chat-content {
+            flex: 1;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: flex-start; /* Align messages to the left by default */
+        }
+        
+        .message.sent {
+            justify-content: flex-end; /* Align sent messages to the right */
+        }
+        
+        .message.received {
+            justify-content: flex-start; /* Align received messages to the left */
+        }
+        
+        .message .text {
+            padding: 12px;
+            border-radius: 12px;
+            max-width: 65%;
+            display: inline-block;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .message.sent .text {
+            background-color: #007bff; /* Background color for sent messages */
+            color: #ffffff;
+            align-self: flex-end; /* Aligns the sent message box to the right */
+        }
+        
+        .message.received .text {
+            background-color: #e1e1e1; /* Background color for received messages */
+            color: #333;
+            align-self: flex-start; /* Aligns the received message box to the left */
+        }
+        
+        .chat-input {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            gap:10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background-color: #f1f1f1;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        .chat-input input:focus {
+            outline: none;
+        }
+        
+        .chat-input i {
+            font-size: 20px;
+            color: #007bff;
+            cursor: pointer;
+        }
+        
+        .chat-input i:hover {
+            color: #0056b3;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io(); // Ensure this is initialized correctly
+            const currentUser = "Alex"; // For demonstration, set the current user
+
+            function sendMessage(msg) {
+                socket.emit('send-message', { msg: msg, sender: currentUser });
+            }
+
+            // Event listener for the send button
+            document.querySelector('.fa-paper-plane').addEventListener('click', () => {
+                const input = document.getElementById('chat-input');
+                const message = input.value.trim();
+                if (message) {
+                    sendMessage(message);
+                    input.value = '';
+                }
+            });
+               
+            // Send sample messages
+            setTimeout(() => sendMessage("Hi"), 1000); // Send "Hi" after 1 second
+            setTimeout(() => sendMessage("How are you?"), 3000); // Send "How are you?" after 3 seconds
+            
+            // Handle incoming messages
+            socket.on('receive-message', (data) => {
+                const chatContent = document.getElementById('chat-content');
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', data.user === currentUser ? 'sent' : 'received');
+                const textDiv = document.createElement('div');
+                textDiv.classList.add('text');
+                textDiv.textContent = data.msg; // Access the 'msg' property here
+                messageDiv.appendChild(textDiv);
+                chatContent.appendChild(messageDiv);
+            });  
+        });         
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-bars"></i>
+                <div class="icons">
+                    <i class="fas fa-search"></i>
+                    <i class="fas fa-plus"></i>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div class="section">
+                    <h3>Inbox</h3>
+                    <div class="item">
+                        <img src="https://cdn.pixabay.com/photo/2012/04/24/12/43/t-39853_1280.png" alt="Profile picture of Text">
+                        <div class="details">
+                            <div class="name">Truth</div>
+                            <div class="time">1h</div>
+                        </div>
+                    </div>
+                    <div class="item active">
+                        <img src="https://thumbs.dreamstime.com/z/smiling-man-cartoon-style-character-isolated-white-background-smiling-man-cartoon-style-179530902.jpg" alt="Profile picture of Alex">
+                        <div class="details">
+                            <div class="name">Alex</div>
+                            <div class="time">3h</div>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <img src="https://tse1.mm.bing.net/th?id=OIP.92xxdSXb3zNlJ5RripZtCwHaEc&pid=Api&P=0&h=180" alt="Profile picture of Elizabeth">
+                        <div class="details">
+                            <div class="name">Elizabeth</div>
+                            <div class="time">2d</div>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <img src="https://th.bing.com/th/id/OIP.Xj5bbvkkkHWnodcIBLjW5QHaEc?w=320&h=192&c=7&r=0&o=5&dpr=1.6&pid=1.7" alt="Profile picture of Elizabeth">
+                        <div class="details">
+                            <div class="name">School</div>
+                            <div class="time">Group</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="main-header">
+                <div class="user-info">
+                    <img src="https://thumbs.dreamstime.com/z/smiling-man-cartoon-style-character-isolated-white-background-smiling-man-cartoon-style-179530902.jpg" alt="Profile picture of Alex">
+                    <span class="name">Alex</span>
+                </div>
+                <div class="icons">
+                    <i class="fas fa-search"></i>
+                    <i class="fas fa-ellipsis-v"></i>
+                </div>
+            </div>
+            <div id="chat-content" class="chat-content"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="Type a message">
+                <i class="fas fa-paper-plane"></i>
+                <i class="fas fa-microphone"></i>
+                <i class="fas fa-paperclip"></i>
+                <i class="fas fa-smile"></i>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
